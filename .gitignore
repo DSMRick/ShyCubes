@@ -42,5 +42,6 @@ out/
 # Server / Testing
 run/
 
-# Private / Local Agent Notes
+# Private / Local Agent Notes & Deploy Secrets
 private_agents.md
+.deploy.env
