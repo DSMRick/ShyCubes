@@ -45,3 +45,10 @@ run/
 # Private / Local Agent Notes & Deploy Secrets
 private_agents.md
 .deploy.env
+server_data/
+
+# Live Server Configs (confidential; track only *.config.example and README.md)
+server_configs/**/*.properties
+server_configs/**/*.yml
+!server_configs/**/*.config.example
+!server_configs/README.md

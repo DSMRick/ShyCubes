@@ -2,23 +2,48 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="${SCRIPT_DIR}/.deploy.env"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/scripts/common.sh"
 
-if [[ ! -f "${ENV_FILE}" ]]; then
-  echo "Error: ${ENV_FILE} not found."
-  echo "Copy .deploy.env.example to .deploy.env and configure your server connection."
-  exit 1
+PULL_ONLY=false
+PULL_CONFIGS=false
+SOURCE_FILE=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --pull-only)
+      PULL_ONLY=true
+      ;;
+    --pull-configs)
+      PULL_CONFIGS=true
+      ;;
+    *)
+      SOURCE_FILE="$arg"
+      ;;
+  esac
+done
+
+# 1. Always pull and version structure files from the server via rsync
+"${SCRIPT_DIR}/scripts/sync_structures.sh"
+
+# 2. Sync configs:
+#    - If --pull-only or --pull-configs is passed, or if server_configs/ has no live configs yet, pull from server.
+#    - Otherwise on deploy, sanitize local edits into *.config.example and push live configs to server via rsync.
+HAS_LOCAL_CONFIGS="$(find "${CONFIGS_ROOT}" -type f \( -name "*.properties" -o -name "*.yml" \) ! -name "*.config.example" 2>/dev/null | head -n 1 || true)"
+
+if [[ "${PULL_ONLY}" == "true" || "${PULL_CONFIGS}" == "true" || -z "${HAS_LOCAL_CONFIGS}" ]]; then
+  "${SCRIPT_DIR}/scripts/sync_configs.sh" --pull
+else
+  "${SCRIPT_DIR}/scripts/sync_configs.sh" --push
 fi
 
-# Load private deployment variables
-# shellcheck disable=SC1090
-source "${ENV_FILE}"
+if [[ "${PULL_ONLY}" == "true" ]]; then
+  echo "Pull and versioning complete (--pull-only)."
+  exit 0
+fi
 
-# Allow passing a specific file path, or auto-detect the built plugin jar
-SOURCE_FILE="${1:-}"
-
+# 3. Locate and deploy plugin JAR via rsync
 if [[ -z "${SOURCE_FILE}" ]]; then
-  # Look in standard Gradle (build/libs) or Maven (target) output directories
   if compgen -G "${SCRIPT_DIR}/build/libs/*.jar" > /dev/null; then
     SOURCE_FILE="$(ls -t "${SCRIPT_DIR}"/build/libs/*.jar | grep -v -E '(-sources|-javadoc|-dev)\.jar$' | head -n 1)"
   elif compgen -G "${SCRIPT_DIR}/target/*.jar" > /dev/null; then
@@ -27,15 +52,14 @@ if [[ -z "${SOURCE_FILE}" ]]; then
 fi
 
 if [[ -z "${SOURCE_FILE}" || ! -f "${SOURCE_FILE}" ]]; then
-  echo "Error: No JAR file found to deploy."
-  echo "Usage: ./deploy.sh [path/to/file.jar]"
-  exit 1
+  echo "No built JAR file found yet to deploy (structures and configs were synced)."
+  echo "To deploy a JAR: ./deploy.sh [path/to/file.jar]"
+  exit 0
 fi
 
 DEST_NAME="${PLUGIN_JAR_NAME:-$(basename "${SOURCE_FILE}")}"
-REMOTE_TARGET="${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_REMOTE_DIR}/${DEST_NAME}"
+REMOTE_TARGET="${REMOTE_CONN}:${DEPLOY_REMOTE_DIR}/${DEST_NAME}"
 
-echo "Deploying $(basename "${SOURCE_FILE}") -> ${REMOTE_TARGET} ..."
-scp -i "${DEPLOY_SSH_KEY}" -o IdentitiesOnly=yes "${SOURCE_FILE}" "${REMOTE_TARGET}"
-echo "Deployment complete!"
-
+echo "[plugin] Deploying $(basename "${SOURCE_FILE}") -> ${REMOTE_TARGET} via rsync..."
+rsync -az -e "ssh ${SSH_OPTS}" "${SOURCE_FILE}" "${REMOTE_TARGET}"
+echo "[plugin] Deployment complete!"
