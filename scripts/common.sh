@@ -248,7 +248,9 @@ instrument() {
   return "${rc}"
 }
 
-if [[ ! -f "${ENV_FILE}" ]]; then
+DEPLOY_LOCAL="${DEPLOY_LOCAL:-false}"
+
+if [[ "${DEPLOY_LOCAL}" != "true" && -z "${DEPLOY_HOST:-}" && ! -f "${ENV_FILE}" ]]; then
   emit_event FATAL "deploy.config.missing" env_file="${ENV_FILE}"
   exit 1
 fi
@@ -258,5 +260,23 @@ DEPLOY_REMOTE_DIR="${DEPLOY_REMOTE_DIR:-${DEPLOY_SERVER_ROOT}/plugins}"
 BACKUP_ROOT="${REPO_ROOT}/${LOCAL_BACKUP_DIR:-server_data}"
 CONFIGS_ROOT="${REPO_ROOT}/server_configs"
 
-SSH_OPTS="-i ${DEPLOY_SSH_KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
-REMOTE_CONN="${DEPLOY_USER}@${DEPLOY_HOST}"
+if [[ "${DEPLOY_LOCAL}" == "true" ]]; then
+  SSH_OPTS=""
+  REMOTE_CONN=""
+  SERVER_ROOT_TARGET="${DEPLOY_SERVER_ROOT}"
+  REMOTE_DIR_TARGET="${DEPLOY_REMOTE_DIR}"
+else
+  SSH_OPTS="-i ${DEPLOY_SSH_KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+  REMOTE_CONN="${DEPLOY_USER}@${DEPLOY_HOST}"
+  SERVER_ROOT_TARGET="${REMOTE_CONN}:${DEPLOY_SERVER_ROOT}"
+  REMOTE_DIR_TARGET="${REMOTE_CONN}:${DEPLOY_REMOTE_DIR}"
+fi
+
+# Helper to invoke rsync with or without SSH depending on DEPLOY_LOCAL
+run_rsync() {
+  if [[ "${DEPLOY_LOCAL}" == "true" ]]; then
+    rsync "$@"
+  else
+    rsync -e "ssh ${SSH_OPTS}" "$@"
+  fi
+}

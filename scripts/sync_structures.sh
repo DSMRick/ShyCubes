@@ -64,8 +64,8 @@ run_sync_structures() {
   instrument DEBUG "structures.prune_versions" prune_old_versions
 
   mkdir -p "${CURRENT_STRUCTURES_DIR}"
-  instrument INFO "structures.rsync.pull" rsync -az --delete -e "ssh ${SSH_OPTS}" \
-    "${REMOTE_CONN}:${DEPLOY_SERVER_ROOT}/world/generated/" \
+  instrument INFO "structures.rsync.pull" run_rsync -az --delete \
+    "${SERVER_ROOT_TARGET}/world/generated/" \
     "${CURRENT_STRUCTURES_DIR}/"
 }
 

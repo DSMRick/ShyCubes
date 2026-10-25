@@ -1,0 +1,58 @@
+name: Sync Server Structures & Configs
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_log_level:
+        description: 'OpenTelemetry Log/Span Level (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)'
+        required: false
+        default: 'INFO'
+        type: choice
+        options:
+          - TRACE
+          - DEBUG
+          - INFO
+          - WARN
+          - ERROR
+          - FATAL
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shycubes-deploy
+  cancel-in-progress: false
+
+env:
+  DEPLOY_LOCAL: "true"
+  DEPLOY_SERVER_ROOT: "/home/opc/mc"
+  DEPLOY_REMOTE_DIR: "/home/opc/mc/plugins"
+  LOCAL_BACKUP_DIR: "server_data"
+  OTEL_SERVICE_NAME: "shyCubesLogs"
+  NR_LOG_PARTITION: "shyCubesLogs"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
+  APP_LOG_LEVEL: ${{ inputs.app_log_level || vars.APP_LOG_LEVEL || 'INFO' }}
+
+jobs:
+  sync:
+    name: Pull, Version & Commit Server Data
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Start OpenTelemetry workflow trace
+        run: ./scripts/ci_trace.sh start "ci.sync_server_data.workflow"
+
+      - name: Pull and version structures & sanitized configs
+        run: ./deploy.sh --pull-only
+
+      - name: Commit and push updated structures & sanitized configs
+        run: ./scripts/commit_and_push_sync.sh
+
+      - name: Finish OpenTelemetry workflow trace
+        if: always()
+        run: ./scripts/ci_trace.sh end "${{ job.status }}"
+

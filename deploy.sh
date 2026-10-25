@@ -60,9 +60,9 @@ deploy_steps() {
   fi
 
   local dest_name="${PLUGIN_JAR_NAME:-$(basename "${SOURCE_FILE}")}"
-  local remote_target="${REMOTE_CONN}:${DEPLOY_REMOTE_DIR}/${dest_name}"
+  local remote_target="${REMOTE_DIR_TARGET}/${dest_name}"
 
-  instrument INFO "deploy.rsync_jar" rsync -az -e "ssh ${SSH_OPTS}" "${SOURCE_FILE}" "${remote_target}"
+  instrument INFO "deploy.rsync_jar" run_rsync -az "${SOURCE_FILE}" "${remote_target}"
 }
 
 # Entry point span

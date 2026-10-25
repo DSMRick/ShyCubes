@@ -1,0 +1,94 @@
+name: Deploy ShyCubes
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'server_data/**'
+      - 'server_configs/**/*.config.example'
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      app_log_level:
+        description: 'OpenTelemetry Log/Span Level (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)'
+        required: false
+        default: 'INFO'
+        type: choice
+        options:
+          - TRACE
+          - DEBUG
+          - INFO
+          - WARN
+          - ERROR
+          - FATAL
+      pull_configs:
+        description: 'Pull live server configs instead of pushing local configs'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shycubes-deploy
+  cancel-in-progress: false
+
+env:
+  DEPLOY_LOCAL: "true"
+  DEPLOY_SERVER_ROOT: "/home/opc/mc"
+  DEPLOY_REMOTE_DIR: "/home/opc/mc/plugins"
+  PLUGIN_JAR_NAME: "shycubes.jar"
+  LOCAL_BACKUP_DIR: "server_data"
+  OTEL_SERVICE_NAME: "shyCubesLogs"
+  NR_LOG_PARTITION: "shyCubesLogs"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
+  APP_LOG_LEVEL: ${{ inputs.app_log_level || vars.APP_LOG_LEVEL || 'INFO' }}
+
+jobs:
+  deploy:
+    name: Build, Deploy & Sync on Server
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Start OpenTelemetry workflow trace
+        run: ./scripts/ci_trace.sh start "ci.deploy.workflow"
+
+      - name: Build plugin (if Gradle or Maven present)
+        run: |
+          source ./scripts/common.sh
+          if [[ -f "./gradlew" ]]; then
+            instrument DEBUG "ci.build.gradle" ./gradlew build -x test
+          elif [[ -f "./pom.xml" ]]; then
+            instrument DEBUG "ci.build.maven" mvn -B package -DskipTests
+          else
+            emit_event INFO "ci.build.skipped" reason="no_build_file"
+          fi
+
+      - name: Run deploy & sync server structures/configs
+        run: |
+          if [[ "${{ inputs.pull_configs }}" == "false" ]]; then
+            ./deploy.sh
+          else
+            ./deploy.sh --pull-configs
+          fi
+
+      - name: Commit and push updated structures & sanitized configs
+        run: ./scripts/commit_and_push_sync.sh
+
+      - name: Record New Relic Deployment Marker
+        env:
+          NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
+          NEW_RELIC_ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
+          NEW_RELIC_ENTITY_GUID: ${{ secrets.NEW_RELIC_ENTITY_GUID }}
+        run: ./scripts/nr_deployment_marker.sh
+
+      - name: Finish OpenTelemetry workflow trace
+        if: always()
+        run: ./scripts/ci_trace.sh end "${{ job.status }}"
+

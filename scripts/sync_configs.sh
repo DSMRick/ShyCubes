@@ -10,7 +10,7 @@ MODE="${1:---pull}"
 pull_configs() {
   mkdir -p "${CONFIGS_ROOT}"
 
-  instrument INFO "configs.rsync.pull" rsync -az --prune-empty-dirs -e "ssh ${SSH_OPTS}" \
+  instrument INFO "configs.rsync.pull" run_rsync -az --prune-empty-dirs \
     --include="/start.sh" \
     --include="/server.properties" \
     --include="/bukkit.yml" \
@@ -22,7 +22,7 @@ pull_configs() {
     --include="/plugins/*/" \
     --include="/plugins/*/config.yml" \
     --exclude="*" \
-    "${REMOTE_CONN}:${DEPLOY_SERVER_ROOT}/" \
+    "${SERVER_ROOT_TARGET}/" \
     "${CONFIGS_ROOT}/"
 
   instrument DEBUG "configs.sanitize" "${SCRIPT_DIR}/sanitize_configs.sh"
@@ -31,13 +31,12 @@ pull_configs() {
 push_configs() {
   instrument DEBUG "configs.sanitize" "${SCRIPT_DIR}/sanitize_configs.sh"
 
-  instrument INFO "configs.rsync.push" rsync -az \
+  instrument INFO "configs.rsync.push" run_rsync -az \
     --exclude="*.config.example" \
     --exclude="README.md" \
     --exclude=".DS_Store" \
-    -e "ssh ${SSH_OPTS}" \
     "${CONFIGS_ROOT}/" \
-    "${REMOTE_CONN}:${DEPLOY_SERVER_ROOT}/"
+    "${SERVER_ROOT_TARGET}/"
 }
 
 run_sync_configs() {
