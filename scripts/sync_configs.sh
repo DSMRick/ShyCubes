@@ -7,12 +7,10 @@ source "${SCRIPT_DIR}/common.sh"
 
 MODE="${1:---pull}"
 
-mkdir -p "${CONFIGS_ROOT}"
+pull_configs() {
+  mkdir -p "${CONFIGS_ROOT}"
 
-if [[ "${MODE}" == "--pull" ]]; then
-  echo "[configs] Pulling server configs via rsync into ${CONFIGS_ROOT}..."
-
-  rsync -az --prune-empty-dirs -e "ssh ${SSH_OPTS}" \
+  instrument INFO "configs.rsync.pull" rsync -az --prune-empty-dirs -e "ssh ${SSH_OPTS}" \
     --include="/start.sh" \
     --include="/server.properties" \
     --include="/bukkit.yml" \
@@ -27,25 +25,30 @@ if [[ "${MODE}" == "--pull" ]]; then
     "${REMOTE_CONN}:${DEPLOY_SERVER_ROOT}/" \
     "${CONFIGS_ROOT}/"
 
-  "${SCRIPT_DIR}/sanitize_configs.sh"
-  echo "[configs] Pull and sanitization complete."
+  instrument DEBUG "configs.sanitize" "${SCRIPT_DIR}/sanitize_configs.sh"
+}
 
-elif [[ "${MODE}" == "--push" ]]; then
-  # Ensure *.config.example files reflect any local edits made before pushing
-  "${SCRIPT_DIR}/sanitize_configs.sh"
+push_configs() {
+  instrument DEBUG "configs.sanitize" "${SCRIPT_DIR}/sanitize_configs.sh"
 
-  echo "[configs] Pushing local configs from ${CONFIGS_ROOT} to ${REMOTE_CONN}:${DEPLOY_SERVER_ROOT} via rsync..."
-  rsync -az \
+  instrument INFO "configs.rsync.push" rsync -az \
     --exclude="*.config.example" \
     --exclude="README.md" \
     --exclude=".DS_Store" \
     -e "ssh ${SSH_OPTS}" \
     "${CONFIGS_ROOT}/" \
     "${REMOTE_CONN}:${DEPLOY_SERVER_ROOT}/"
+}
 
-  echo "[configs] Push complete."
-else
-  echo "Usage: $0 [--pull | --push]"
-  exit 1
-fi
+run_sync_configs() {
+  if [[ "${MODE}" == "--pull" ]]; then
+    pull_configs
+  elif [[ "${MODE}" == "--push" ]]; then
+    push_configs
+  else
+    emit_event ERROR "configs.sync.invalid_mode" mode="${MODE}"
+    return 1
+  fi
+}
 
+instrument INFO "configs.sync.run" run_sync_configs

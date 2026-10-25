@@ -18,4 +18,3 @@ else
     nohup "${JAVA_CMD[@]}" </dev/null >> logs/restart.out 2>&1 &
   ) >/dev/null 2>&1 &
 fi
-

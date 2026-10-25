@@ -5,15 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/common.sh"
 
-if [[ ! -d "${CONFIGS_ROOT}" ]]; then
-  echo "[sanitize] No ${CONFIGS_ROOT} directory found."
-  exit 0
-fi
-
-echo "[sanitize] Generating sanitized *.config.example files in ${CONFIGS_ROOT}..."
-
-while IFS= read -r -d '' file; do
-  example_file="${file}.config.example"
+sanitize_single_file() {
+  local file="$1"
+  local example_file="${file}.config.example"
 
   sed -E \
     -e "s/${DEPLOY_HOST//./\\.}/<YOUR_SERVER_IP>/g" \
@@ -27,8 +21,17 @@ while IFS= read -r -d '' file; do
     -e "s/^([[:space:]]*token:[[:space:]]*)['\"]?[^'\"[:space:]]+['\"]?$/\1'<REDACTED_TOKEN>'/" \
     -e "s/^([[:space:]]*secret:[[:space:]]*)['\"]?[^'\"[:space:]]+['\"]?$/\1'<REDACTED_SECRET>'/" \
     "${file}" > "${example_file}"
+}
 
-done < <(find "${CONFIGS_ROOT}" -type f \( -name "*.properties" -o -name "*.yml" \) ! -name "*.config.example" -print0)
+run_sanitize_configs() {
+  if [[ ! -d "${CONFIGS_ROOT}" ]]; then
+    emit_event WARN "configs.sanitize.skipped" reason="directory_missing"
+    return 0
+  fi
 
-echo "[sanitize] Done."
+  while IFS= read -r -d '' file; do
+    instrument TRACE "configs.sanitize_file" sanitize_single_file "${file}"
+  done < <(find "${CONFIGS_ROOT}" -type f \( -name "*.properties" -o -name "*.yml" \) ! -name "*.config.example" -print0)
+}
 
+instrument INFO "configs.sanitize.run" run_sanitize_configs
