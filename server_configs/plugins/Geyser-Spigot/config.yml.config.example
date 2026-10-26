@@ -53,7 +53,7 @@ bedrock:
     # You can list an address this machine does not have, such as your public IP, if your router forwards that port
     # to this machine. You need to set up the port forwarding yourself.
     # Leave empty to use this machine's own addresses, plus the public address found with "stun-discovery".
-    advertise-addresses: [147.224.168.91]
+    advertise-addresses: [<YOUR_SERVER_IP>]
 
     # Finds this server's public address through STUN when "advertise-addresses" is empty.
     # Built-in signaling asks public STUN servers, and the external signaling service asks its own.

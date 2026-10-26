@@ -16,6 +16,7 @@ sanitize_single_file() {
     -e 's/^(rcon\.password=).+$/\1<REDACTED_SECRET>/'
     -e 's/^(server-ip=).+$/\1<YOUR_SERVER_IP>/'
     -e 's/^([[:space:]]*address:[[:space:]]*)[1-9][0-9]*\.[0-9]+\.[0-9]+\.[0-9]+$/\1<YOUR_SERVER_IP>/'
+    -e 's/^([[:space:]]*advertise-addresses:[[:space:]]*\[)[^]]+(\].*)$/\1<YOUR_SERVER_IP>\2/'
     -e 's/^([[:space:]]*serverUuid:[[:space:]]*).+$/\1<REDACTED_UUID>/'
     -e 's/^([[:space:]]*uuid:[[:space:]]*)[0-9a-fA-F-]{36}$/\1<REDACTED_UUID>/'
     -e "s/^([[:space:]]*password:[[:space:]]*)['\"]?[^'\"[:space:]]+['\"]?$/\1'<REDACTED_SECRET>'/"
