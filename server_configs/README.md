@@ -10,7 +10,7 @@ This directory mirrors the configuration layout of the Paper + Geyser-Spigot + F
 - **Regenerate `.config.example` files**: `./scripts/sanitize_configs.sh`
 
 ## Tracked Configuration Files
-- `start.sh` — Server startup and `/restart` handler script (`java -Xms10G -Xmx10G -jar server.jar nogui`)
+- `start.sh` — Server startup and restart script (stops any existing `server.jar` processes cleanly, waits for world save & lock release, then launches `java -Xms10G -Xmx10G -jar server.jar nogui`)
 - `server.properties.config.example` — Core Minecraft / Paper server properties
 - `bukkit.yml.config.example` — Bukkit configuration
 - `spigot.yml.config.example` — Spigot configuration

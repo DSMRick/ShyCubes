@@ -28,6 +28,11 @@ on:
         required: false
         default: true
         type: boolean
+      restart_server:
+        description: 'Restart Minecraft server after deploy'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -46,6 +51,7 @@ env:
   NR_LOG_PARTITION: "shyCubesLogs"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
   APP_LOG_LEVEL: ${{ inputs.app_log_level || vars.APP_LOG_LEVEL || 'INFO' }}
+  RUNNER_KILL_PROCESS_TREE: "0"
 
 jobs:
   deploy:
@@ -89,6 +95,18 @@ jobs:
 
       - name: Commit and push updated structures & sanitized configs
         run: ./scripts/commit_and_push_sync.sh
+
+      - name: Restart Minecraft server (if requested)
+        if: ${{ inputs.restart_server == true }}
+        run: |
+          source ./scripts/common.sh
+          instrument INFO "server.restart" "${DEPLOY_SERVER_ROOT}/start.sh" --wait
+          new_pid="$(pgrep -f "java.*server\.jar" | head -n 1 || true)"
+          if [[ -z "${new_pid}" ]]; then
+            emit_event ERROR "server.restart.failed" reason="no_java_pid_after_start"
+            exit 1
+          fi
+          emit_event INFO "server.restart.completed" pid="${new_pid}"
 
       - name: Record New Relic Deployment Marker
         env:
