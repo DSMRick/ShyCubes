@@ -258,7 +258,11 @@ fi
 DEPLOY_SERVER_ROOT="${DEPLOY_SERVER_ROOT:-/home/opc/mc}"
 DEPLOY_REMOTE_DIR="${DEPLOY_REMOTE_DIR:-${DEPLOY_SERVER_ROOT}/plugins}"
 BACKUP_ROOT="${REPO_ROOT}/${LOCAL_BACKUP_DIR:-server_data}"
-CONFIGS_ROOT="${REPO_ROOT}/server_configs"
+if [[ -d "${REPO_ROOT}/server_configs" ]]; then
+  CONFIGS_ROOT="${CONFIGS_ROOT:-${REPO_ROOT}/server_configs}"
+else
+  CONFIGS_ROOT="${CONFIGS_ROOT:-${DEPLOY_SERVER_ROOT}}"
+fi
 
 if [[ "${DEPLOY_LOCAL}" == "true" ]]; then
   SSH_OPTS=""

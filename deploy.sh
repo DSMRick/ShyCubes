@@ -61,10 +61,13 @@ deploy_steps() {
     return 0
   fi
 
-  # 4. Sync bundled resource packs (.mcpack -> Geyser packs/, .zip/.sha1 -> resourcepacks/)
+  # 4. Ensure systemd service (shycubes.service) is installed and up to date
+  instrument INFO "deploy.install_systemd" "${SCRIPT_DIR}/scripts/manage_systemd.sh" --install-only
+
+  # 5. Sync bundled resource packs (.mcpack -> Geyser packs/, .zip/.sha1 -> resourcepacks/)
   instrument INFO "deploy.sync_resource_pack" "${SCRIPT_DIR}/scripts/build_resource_pack.sh" --sync
 
-  # 5. Locate and deploy plugin JAR via rsync
+  # 6. Locate and deploy plugin JAR via rsync
   instrument DEBUG "deploy.locate_jar" locate_plugin_jar
 
   if [[ -z "${SOURCE_FILE}" || ! -f "${SOURCE_FILE}" ]]; then

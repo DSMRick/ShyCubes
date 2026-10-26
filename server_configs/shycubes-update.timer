@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily 4:00 AM America/Chicago (CT) ShyCubes Update & Restart Timer
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 America/Chicago
+Persistent=true
+Unit=shycubes-update.service
+
+[Install]
+WantedBy=timers.target
+

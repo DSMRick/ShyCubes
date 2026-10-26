@@ -1,0 +1,26 @@
+{
+  "paper": {
+    "project": "paper",
+    "version": "auto",
+    "target_jar": "server.jar"
+  },
+  "plugins": [
+    {
+      "name": "Geyser-Spigot",
+      "type": "geyser_download",
+      "project": "geyser",
+      "platform": "spigot",
+      "url": "https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot",
+      "target_jar": "Geyser-Spigot.jar"
+    },
+    {
+      "name": "floodgate-spigot",
+      "type": "geyser_download",
+      "project": "floodgate",
+      "platform": "spigot",
+      "url": "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot",
+      "target_jar": "floodgate-spigot.jar"
+    }
+  ]
+}
+

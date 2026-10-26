@@ -98,15 +98,7 @@ jobs:
 
       - name: Restart Minecraft server (if requested)
         if: ${{ inputs.restart_server == true }}
-        run: |
-          source ./scripts/common.sh
-          instrument INFO "server.restart" "${DEPLOY_SERVER_ROOT}/start.sh" --wait
-          new_pid="$(pgrep -f "java.*server\.jar" | head -n 1 || true)"
-          if [[ -z "${new_pid}" ]]; then
-            emit_event ERROR "server.restart.failed" reason="no_java_pid_after_start"
-            exit 1
-          fi
-          emit_event INFO "server.restart.completed" pid="${new_pid}"
+        run: ./scripts/manage_systemd.sh --restart
 
       - name: Record New Relic Deployment Marker
         env:

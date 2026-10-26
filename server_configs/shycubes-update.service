@@ -1,0 +1,17 @@
+[Unit]
+Description=ShyCubes Nightly Update & Restart (Paper, Geyser-Spigot, Floodgate, & Plugins)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=opc
+WorkingDirectory=/home/opc/mc
+Environment="DEPLOY_LOCAL=true"
+Environment="DEPLOY_SERVER_ROOT=/home/opc/mc"
+Environment="DEPLOY_REMOTE_DIR=/home/opc/mc/plugins"
+Environment="OTEL_SERVICE_NAME=shyCubesLogs"
+Environment="NR_LOG_PARTITION=shyCubesLogs"
+Environment="OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318"
+Environment="APP_LOG_LEVEL=INFO"
+ExecStart=/home/opc/mc/scripts/update_server_and_plugins.sh --restart

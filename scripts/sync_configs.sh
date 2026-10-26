@@ -12,6 +12,11 @@ pull_configs() {
 
   instrument INFO "configs.rsync.pull" run_rsync -az --prune-empty-dirs \
     --include="/start.sh" \
+    --include="/run_server_with_otel.sh" \
+    --include="/shycubes.service" \
+    --include="/shycubes-update.service" \
+    --include="/shycubes-update.timer" \
+    --include="/plugins_manifest.json" \
     --include="/server.properties" \
     --include="/bukkit.yml" \
     --include="/spigot.yml" \

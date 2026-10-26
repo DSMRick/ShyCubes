@@ -1,0 +1,25 @@
+[Unit]
+Description=ShyCubes Paper Minecraft Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=opc
+WorkingDirectory=/home/opc/mc
+Environment="OTEL_SERVICE_NAME=shyCubesLogs"
+Environment="NR_LOG_PARTITION=shyCubesLogs"
+Environment="OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318"
+Environment="APP_LOG_LEVEL=INFO"
+ExecStart=/home/opc/mc/run_server_with_otel.sh /usr/bin/env java -Xms10G -Xmx10G -jar /home/opc/mc/server.jar nogui
+KillSignal=SIGTERM
+TimeoutStopSec=60
+SendSIGKILL=yes
+SuccessExitStatus=0 130 143
+Restart=always
+RestartSec=3
+StandardInput=null
+
+[Install]
+WantedBy=multi-user.target
+

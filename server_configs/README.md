@@ -10,7 +10,11 @@ This directory mirrors the configuration layout of the Paper + Geyser-Spigot + F
 - **Regenerate `.config.example` files**: `./scripts/sanitize_configs.sh`
 
 ## Tracked Configuration Files
-- `start.sh` — Server startup and restart script (stops any existing `server.jar` processes cleanly, waits for world save & lock release, then launches `java -Xms10G -Xmx10G -jar server.jar nogui`)
+- `shycubes.service` — `systemd` unit file installed to `/etc/systemd/system/shycubes.service` (`Restart=always`, runs `run_server_with_otel.sh` wrapping `java -Xms10G -Xmx10G -jar /home/opc/mc/server.jar nogui`)
+- `run_server_with_otel.sh` — Streams Paper JVM stdout/stderr lines in real time to New Relic via the local OTLP collector (`http://localhost:4318/v1/logs`, `shyCubesLogs` partition) with parsed severity levels and thread names
+- `shycubes-update.timer` & `shycubes-update.service` — `systemd` timer that runs `scripts/update_server_and_plugins.sh --restart` every day at **4:00 AM America/Chicago (CT)**
+- `plugins_manifest.json` — Declarative manifest of Paper and plugins (`Geyser-Spigot`, `floodgate-spigot`, plus any future Modrinth, Hangar, GitHub Release, or URL plugins) updated by `scripts/update_server_and_plugins.sh`
+- `start.sh` — Delegates CLI restarts to `sudo systemctl restart shycubes.service` and exits immediately when called by Paper's in-game `/restart` hook so `systemd` restarts the server cleanly without hanging
 - `server.properties.config.example` — Core Minecraft / Paper server properties
 - `bukkit.yml.config.example` — Bukkit configuration
 - `spigot.yml.config.example` — Spigot configuration
