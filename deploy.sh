@@ -62,7 +62,9 @@ deploy_steps() {
   fi
 
   # 4. Ensure systemd service (shycubes.service) is installed and up to date
-  instrument INFO "deploy.install_systemd" "${SCRIPT_DIR}/scripts/manage_systemd.sh" --install-only
+  if [[ "${SKIP_SYSTEMD_INSTALL:-false}" != "true" ]]; then
+    instrument INFO "deploy.install_systemd" "${SCRIPT_DIR}/scripts/manage_systemd.sh" --install-only
+  fi
 
   # 5. Sync bundled resource packs (.mcpack -> Geyser packs/, .zip/.sha1 -> resourcepacks/)
   instrument INFO "deploy.sync_resource_pack" "${SCRIPT_DIR}/scripts/build_resource_pack.sh" --sync

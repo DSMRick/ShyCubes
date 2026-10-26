@@ -40,6 +40,7 @@ install_service() {
     "${SCRIPT_DIR}/common.sh" \
     "${SCRIPT_DIR}/manage_systemd.sh" \
     "${SCRIPT_DIR}/update_server_and_plugins.sh" \
+    "${SCRIPT_DIR}/pre_start_check.sh" \
     "${SERVER_ROOT_TARGET}/scripts/"
 
   # Install unit and timer files into /etc/systemd/system/ and enable both the server and the 4:00 AM CT update timer

@@ -7,10 +7,15 @@ Wants=network-online.target
 Type=simple
 User=opc
 WorkingDirectory=/home/opc/mc
+Environment="DEPLOY_LOCAL=true"
+Environment="DEPLOY_SERVER_ROOT=/home/opc/mc"
+Environment="DEPLOY_REMOTE_DIR=/home/opc/mc/plugins"
 Environment="OTEL_SERVICE_NAME=shyCubesLogs"
 Environment="NR_LOG_PARTITION=shyCubesLogs"
 Environment="OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318"
 Environment="APP_LOG_LEVEL=INFO"
+TimeoutStartSec=300
+ExecStartPre=-/home/opc/mc/scripts/pre_start_check.sh
 ExecStart=/home/opc/mc/run_server_with_otel.sh /usr/bin/env java -Xms10G -Xmx10G -jar /home/opc/mc/server.jar nogui
 KillSignal=SIGTERM
 TimeoutStopSec=60
