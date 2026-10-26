@@ -15,7 +15,7 @@
 bedrock:
   # The IP address that Geyser will bind on to listen for incoming Bedrock connections.
   # Generally, you should only change this if you want to limit what IPs can connect to your server.
-  address: <YOUR_SERVER_IP>
+  address: 0.0.0.0
 
   # The port that Geyser will listen on for incoming Bedrock connections.
   # Built-in signaling uses this port over TCP (and UDP if "webrtc-port" is not set), and RakNet uses it over UDP.
