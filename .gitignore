@@ -17,6 +17,7 @@
 *.nar
 *.ear
 *.zip
+!resourcepacks/dist/*.zip
 *.tar.gz
 *.rar
 

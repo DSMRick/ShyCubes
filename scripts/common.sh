@@ -11,7 +11,7 @@ if [[ -f "${ENV_FILE}" ]]; then
 fi
 
 # OpenTelemetry & New Relic configuration (read once at startup)
-export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-shyCubesLogs}"
+export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-shyCubes}"
 export NR_LOG_PARTITION="${NR_LOG_PARTITION:-shyCubesLogs}"
 export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}"
 export OTEL_RESOURCE_ATTRIBUTES="service.name=${OTEL_SERVICE_NAME},appName=${OTEL_SERVICE_NAME},partition=${NR_LOG_PARTITION}"
@@ -278,5 +278,25 @@ run_rsync() {
     rsync "$@"
   else
     rsync -e "ssh ${SSH_OPTS}" "$@"
+  fi
+}
+
+# Helper to run a command on the target server (or locally when DEPLOY_LOCAL=true)
+run_remote_cmd() {
+  if [[ "${DEPLOY_LOCAL}" == "true" ]]; then
+    "$@"
+  else
+    # shellcheck disable=SC2086
+    ssh ${SSH_OPTS} "${REMOTE_CONN}" "$@"
+  fi
+}
+
+# Helper to run a command on the target server (or locally when DEPLOY_LOCAL=true)
+run_remote_cmd() {
+  if [[ "${DEPLOY_LOCAL}" == "true" ]]; then
+    "$@"
+  else
+    # shellcheck disable=SC2086
+    ssh ${SSH_OPTS} "${REMOTE_CONN}" "$@"
   fi
 }

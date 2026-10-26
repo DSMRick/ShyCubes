@@ -8,6 +8,9 @@ source "${SCRIPT_DIR}/common.sh"
 stage_synced_files() {
   cd "${REPO_ROOT}"
   git add "${BACKUP_ROOT}" 2>/dev/null || true
+  if [[ -d "${REPO_ROOT}/resourcepacks/dist" ]]; then
+    git add "${REPO_ROOT}/resourcepacks/dist" 2>/dev/null || true
+  fi
   while IFS= read -r -d '' file; do
     git add "${file}"
   done < <(find "${CONFIGS_ROOT}" -type f -name "*.config.example" -print0 2>/dev/null)

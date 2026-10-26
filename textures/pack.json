@@ -1,0 +1,12 @@
+{
+  "name": "ShyCubes Resource Pack",
+  "description": "ShyCubes Official Resource Pack (Java & Bedrock)",
+  "version": [1, 0, 0],
+  "java_pack_format": 46,
+  "java_supported_formats": [15, 64],
+  "java_pack_uuid": "a8c9d4e2-71b3-4f5a-9c21-6e3f8b4d2101",
+  "bedrock_header_uuid": "b9d8e5f3-82c4-4a6b-8d32-7f4a9c5e3202",
+  "bedrock_module_uuid": "c1e7f6a4-93d5-4b7c-9e43-8a5b0d6f4303",
+  "bedrock_min_engine_version": [1, 21, 0]
+}
+

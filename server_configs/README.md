@@ -21,6 +21,7 @@ This directory mirrors the configuration layout of the Paper + Geyser-Spigot + F
 - `plugins/bStats/config.yml.config.example` — bStats metrics configuration
 
 ## Configuration Change Log
+- **Configured Resource Pack (`server.properties`)**: Configured `resource-pack`, `resource-pack-id`, and `resource-pack-sha1` (automatically updated by [`scripts/build_resource_pack.sh`](file:///Users/rmanion/personal/mc1/scripts/build_resource_pack.sh) on every build/deploy) alongside Bedrock `.mcpack` delivery in `/home/opc/mc/plugins/Geyser-Spigot/packs/`.
 - **Added `start.sh`**: Added executable startup script (`java -Xms10G -Xmx10G -jar server.jar nogui`) to `/home/opc/mc/start.sh` so Spigot/Paper's `/restart` (`restart-script: ./start.sh` in `spigot.yml`) works both from in-game `/restart` and interactive SSH sessions.
 - **Initial baseline**: Pulled from remote Paper 26.3 server with Geyser-Spigot (`transport: nethernet`, `mode: builtin`) and Floodgate installed.
 
