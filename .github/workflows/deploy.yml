@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'server_data/**'
+      - 'server_data/versions/**'
+      - 'server_data/.version'
       - 'server_configs/**/*.config.example'
       - 'resourcepacks/dist/**'
       - '**.md'

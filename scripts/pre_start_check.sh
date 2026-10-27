@@ -43,10 +43,10 @@ sync_and_deploy_from_git() {
   fi
 
   DEPLOY_LOCAL="true" SKIP_SYSTEMD_INSTALL="true" \
-    instrument INFO "startup.deploy" ./deploy.sh --pull-configs
+    instrument INFO "startup.deploy" "${repo_dir}/deploy.sh" --pull-configs
 
   DEPLOY_LOCAL="true" \
-    instrument INFO "startup.git.commit_sync" ./scripts/commit_and_push_sync.sh || true
+    instrument INFO "startup.git.commit_sync" "${repo_dir}/scripts/commit_and_push_sync.sh" || true
 }
 
 run_pre_start() {

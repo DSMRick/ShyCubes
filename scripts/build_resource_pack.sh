@@ -15,7 +15,7 @@ MAPPINGS_OUT_DIR="${DIST_ROOT}/custom_mappings"
 
 # Default public URL for Java clients (GitHub raw URL on main branch; can be overridden via RESOURCE_PACK_URL in .deploy.env)
 DEFAULT_PACK_URL="https://raw.githubusercontent.com/DSMRick/ShyCubes/main/resourcepacks/dist/shycubes-java.zip"
-PACK_URL="${RESOURCE_PACK_URL:-${DEFAULT_PACK_URL}}"
+PACK_URL_BASE="${RESOURCE_PACK_URL:-${DEFAULT_PACK_URL}}"
 
 generate_packs_from_textures() {
   mkdir -p "${DIST_ROOT}" "${MAPPINGS_OUT_DIR}"
@@ -128,6 +128,26 @@ with tempfile.TemporaryDirectory() as tmpdir:
         f.write("\n")
     shutil.copyfile(icon_path, os.path.join(java_dir, "pack.png"))
 
+    # Compute deterministic pack version [1, 0, <patch>] from a hash of all source files in textures/
+    content_hasher = hashlib.sha256()
+    for root, dirs, files in os.walk(textures_root):
+        dirs.sort()
+        files.sort()
+        for fname in files:
+            if fname.startswith("."):
+                continue
+            fpath = os.path.join(root, fname)
+            rel = os.path.relpath(fpath, textures_root).replace(os.sep, "/")
+            content_hasher.update(rel.encode("utf-8"))
+            with open(fpath, "rb") as hf:
+                content_hasher.update(hf.read())
+    patch_ver = int(content_hasher.hexdigest()[:4], 16)
+    base_ver = list(meta.get("version", [1, 0, 0]))
+    if len(base_ver) >= 3 and base_ver[2] == 0:
+        pack_version = [base_ver[0], base_ver[1], patch_ver]
+    else:
+        pack_version = base_ver
+
     # 2. Bedrock manifest.json & pack_icon.png
     manifest = {
         "format_version": 2,
@@ -135,7 +155,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
             "name": meta.get("name", "ShyCubes Resource Pack"),
             "description": meta.get("description", "ShyCubes Resource Pack"),
             "uuid": meta.get("bedrock_header_uuid", "b9d8e5f3-82c4-4a6b-8d32-7f4a9c5e3202"),
-            "version": meta.get("version", [1, 0, 0]),
+            "version": pack_version,
             "min_engine_version": meta.get("bedrock_min_engine_version", [1, 21, 0]),
         },
         "modules": [
@@ -143,7 +163,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
                 "type": "resources",
                 "description": meta.get("description", "ShyCubes Resource Pack"),
                 "uuid": meta.get("bedrock_module_uuid", "c1e7f6a4-93d5-4b7c-9e43-8a5b0d6f4303"),
-                "version": meta.get("version", [1, 0, 0]),
+                "version": pack_version,
             }
         ],
     }
@@ -162,6 +182,11 @@ with tempfile.TemporaryDirectory() as tmpdir:
         ("entity", "assets/minecraft/textures/entity", "textures/entity", None),
         ("gui", "assets/minecraft/textures/gui", "textures/ui", None),
     ]
+
+    # Java -> Bedrock filename aliases for vanilla entity/block textures that differ between editions
+    bedrock_entity_aliases = {
+        "chest/normal_left.png": ["chest/double_normal.png"],
+    }
 
     texture_count = 0
     for src_sub, java_sub, bedrock_sub, atlas_dict in category_map:
@@ -191,6 +216,13 @@ with tempfile.TemporaryDirectory() as tmpdir:
                 bedrock_dest = os.path.join(bedrock_dir, bedrock_sub, rel_from_cat)
                 os.makedirs(os.path.dirname(bedrock_dest), exist_ok=True)
                 shutil.copyfile(full_src, bedrock_dest)
+
+                if src_sub == "entity" and rel_from_cat in bedrock_entity_aliases:
+                    for alias_rel in bedrock_entity_aliases[rel_from_cat]:
+                        alias_dest = os.path.join(bedrock_dir, bedrock_sub, alias_rel)
+                        os.makedirs(os.path.dirname(alias_dest), exist_ok=True)
+                        if not os.path.exists(alias_dest):
+                            shutil.copyfile(full_src, alias_dest)
 
                 if atlas_dict is not None:
                     atlas_dict[short_name] = {
@@ -381,8 +413,10 @@ update_server_properties_resource_pack() {
   local pack_uuid
   pack_uuid="$(jq -r '.java_pack_uuid // "a8c9d4e2-71b3-4f5a-9c21-6e3f8b4d2101"' "${TEXTURES_ROOT}/pack.json")"
 
+  # Append ?v=<sha1_prefix> to bust GitHub Raw CDN cache whenever the pack changes
+  local pack_url="${PACK_URL_BASE}?v=${java_sha1:0:12}"
   # Escape colons for Minecraft server.properties format (https\://...)
-  local escaped_url="${PACK_URL//:/\\:}"
+  local escaped_url="${pack_url//:/\\:}"
 
   python3 - "${props_file}" "${escaped_url}" "${pack_uuid}" "${java_sha1}" <<'PYEOF'
 import sys
@@ -453,7 +487,7 @@ run_build_resource_pack() {
   emit_event INFO "resourcepack.built" \
     java_sha1="${java_sha1}" \
     bedrock_sha256="${bedrock_sha256}" \
-    pack_url="${PACK_URL}"
+    pack_url="${PACK_URL_BASE}?v=${java_sha1:0:12}"
 
   if [[ "${1:-}" == "--sync" ]]; then
     sync_resource_packs_to_server

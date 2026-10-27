@@ -64,7 +64,17 @@ run_sync_structures() {
   instrument DEBUG "structures.prune_versions" prune_old_versions
 
   mkdir -p "${CURRENT_STRUCTURES_DIR}"
-  instrument INFO "structures.rsync.pull" run_rsync -az --delete \
+  if [[ "${DEPLOY_LOCAL}" == "true" ]]; then
+    mkdir -p "${DEPLOY_SERVER_ROOT}/world/generated"
+  fi
+
+  # 1. Push any new structures added in Git (server_data/current/structures/) to the server without overwriting newer in-game edits
+  instrument INFO "structures.rsync.push_from_git" run_rsync -az --update \
+    "${CURRENT_STRUCTURES_DIR}/" \
+    "${SERVER_ROOT_TARGET}/world/generated/"
+
+  # 2. Pull all structures from the server back into server_data/current/structures/
+  instrument INFO "structures.rsync.pull" run_rsync -az \
     "${SERVER_ROOT_TARGET}/world/generated/" \
     "${CURRENT_STRUCTURES_DIR}/"
 }
