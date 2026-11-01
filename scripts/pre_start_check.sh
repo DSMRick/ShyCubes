@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/common.sh"
 
 find_local_repo_checkout() {
   local candidates=(
+    "/home/opc/shycubes/git/actions-runner/_work/ShyCubes/ShyCubes"
     "/home/opc/actions-runner/_work/ShyCubes/ShyCubes"
     "/home/opc/ShyCubes"
     "${REPO_ROOT}"

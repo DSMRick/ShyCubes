@@ -75,6 +75,7 @@ collisions:
 command-blocks:
   force-follow-perm-level: true
   permissions-level: 2
+  time-format-pattern: default
 entities:
   armor-stands:
     do-collision-entity-lookups: true
