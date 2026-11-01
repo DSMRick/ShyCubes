@@ -10,7 +10,7 @@ This directory mirrors the configuration layout of the Paper + Geyser-Spigot + F
 - **Regenerate `.config.example` files**: `./scripts/sanitize_configs.sh`
 
 ## Tracked Configuration Files
-- `shycubes.service` — `systemd` unit file installed to `/etc/systemd/system/shycubes.service` (`Restart=always`, runs `ExecStartPre=-/home/opc/mc/scripts/pre_start_check.sh` to deploy & update Paper/plugins on every start/restart, then runs `run_server_with_otel.sh` wrapping `java -Xms10G -Xmx10G -jar /home/opc/mc/server.jar nogui`)
+- `shycubes.service` — `systemd` unit file installed to `/etc/systemd/system/shycubes.service` (`Restart=always`, runs `ExecStartPre=-/home/opc/mc/scripts/pre_start_check.sh` to deploy & update Paper/plugins on every start/restart, then runs `run_server_with_otel.sh` wrapping `java -Xms4G -Xmx4G -jar /home/opc/mc/server.jar nogui`)
 - `run_server_with_otel.sh` — Streams Paper JVM stdout/stderr lines in real time to New Relic via the local OTLP collector (`http://localhost:4318/v1/logs`, `shyCubesLogs` partition) with parsed severity levels and thread names
 - `shycubes-update.timer` & `shycubes-update.service` — `systemd` timer that runs `scripts/update_server_and_plugins.sh --restart` every day at **4:00 AM America/Chicago (CT)**
 - `plugins_manifest.json` — Declarative manifest of Paper and plugins (`Geyser-Spigot`, `floodgate-spigot`, plus any future Modrinth, Hangar, GitHub Release, or URL plugins) updated by `scripts/update_server_and_plugins.sh`
@@ -25,6 +25,7 @@ This directory mirrors the configuration layout of the Paper + Geyser-Spigot + F
 - `plugins/bStats/config.yml.config.example` — bStats metrics configuration
 
 ## Configuration Change Log
+- **Right-sized JVM Heap (`shycubes.service`)**: Lowered JVM heap from `-Xms10G -Xmx10G` to `-Xms4G -Xmx4G` to fit cleanly within the 5.5 GiB OCI server memory without swapping or OOM-killing.
 - **Configured Resource Pack (`server.properties`)**: Configured `resource-pack`, `resource-pack-id`, and `resource-pack-sha1` (automatically updated by [`scripts/build_resource_pack.sh`](file:///Users/rmanion/personal/mc1/scripts/build_resource_pack.sh) on every build/deploy) alongside Bedrock `.mcpack` delivery in `/home/opc/mc/plugins/Geyser-Spigot/packs/`.
 - **Added `start.sh`**: Added executable startup script (`java -Xms10G -Xmx10G -jar server.jar nogui`) to `/home/opc/mc/start.sh` so Spigot/Paper's `/restart` (`restart-script: ./start.sh` in `spigot.yml`) works both from in-game `/restart` and interactive SSH sessions.
 - **Initial baseline**: Pulled from remote Paper 26.3 server with Geyser-Spigot (`transport: nethernet`, `mode: builtin`) and Floodgate installed.

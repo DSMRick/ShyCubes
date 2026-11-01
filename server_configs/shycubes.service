@@ -16,7 +16,7 @@ Environment="OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318"
 Environment="APP_LOG_LEVEL=INFO"
 TimeoutStartSec=300
 ExecStartPre=-/home/opc/mc/scripts/pre_start_check.sh
-ExecStart=/home/opc/mc/run_server_with_otel.sh /usr/bin/env java -Xms10G -Xmx10G -jar /home/opc/mc/server.jar nogui
+ExecStart=/home/opc/mc/run_server_with_otel.sh /usr/bin/env java -Xms4G -Xmx4G -jar /home/opc/mc/server.jar nogui
 KillSignal=SIGTERM
 TimeoutStopSec=60
 SendSIGKILL=yes
