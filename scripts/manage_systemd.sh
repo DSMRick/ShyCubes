@@ -51,8 +51,20 @@ install_service() {
       "${DEPLOY_SERVER_ROOT}/${UPDATE_TIMER_NAME}" \
       "/etc/systemd/system/"
 
+  instrument INFO "systemd.chmod_files" run_remote_cmd \
+    sudo chmod 644 "/etc/systemd/system/${SERVICE_NAME}" "/etc/systemd/system/${UPDATE_SERVICE_NAME}" "/etc/systemd/system/${UPDATE_TIMER_NAME}"
+
+  instrument INFO "systemd.chmod_scripts" run_remote_cmd \
+    chmod +x "${DEPLOY_SERVER_ROOT}/start.sh" "${DEPLOY_SERVER_ROOT}/run_server_with_otel.sh" "${DEPLOY_SERVER_ROOT}/scripts/common.sh" "${DEPLOY_SERVER_ROOT}/scripts/manage_systemd.sh" "${DEPLOY_SERVER_ROOT}/scripts/update_server_and_plugins.sh" "${DEPLOY_SERVER_ROOT}/scripts/pre_start_check.sh"
+
+  instrument INFO "systemd.daemon_reload" run_remote_cmd \
+    sudo systemctl daemon-reload
+
   instrument INFO "systemd.enable_unit" run_remote_cmd \
-    sudo bash -c "chmod 644 /etc/systemd/system/${SERVICE_NAME} /etc/systemd/system/${UPDATE_SERVICE_NAME} /etc/systemd/system/${UPDATE_TIMER_NAME} && chmod +x ${DEPLOY_SERVER_ROOT}/start.sh ${DEPLOY_SERVER_ROOT}/run_server_with_otel.sh ${DEPLOY_SERVER_ROOT}/scripts/*.sh && systemctl daemon-reload && systemctl enable ${SERVICE_NAME} && systemctl enable --now ${UPDATE_TIMER_NAME}"
+    sudo systemctl enable "${SERVICE_NAME}"
+
+  instrument INFO "systemd.enable_timer" run_remote_cmd \
+    sudo systemctl enable --now "${UPDATE_TIMER_NAME}"
 }
 
 restart_service() {
@@ -63,7 +75,7 @@ restart_service() {
   main_pid="$(run_remote_cmd systemctl show -p MainPID --value "${SERVICE_NAME}" 2>/dev/null || echo 0)"
   if [[ "${main_pid}" == "0" || -z "${main_pid}" ]]; then
     instrument DEBUG "systemd.cleanup_unmanaged" run_remote_cmd \
-      bash -c 'pids=$(pgrep -f "java.*server\.jar" || true); if [[ -n "$pids" ]]; then kill -TERM $pids 2>/dev/null || true; for i in {1..25}; do pgrep -f "java.*server\.jar" >/dev/null || break; sleep 1; done; pkill -9 -f "java.*server\.jar" 2>/dev/null || true; fi'
+      "pids=\$(pgrep -f 'java.*server\\.jar' || true); if [[ -n \"\$pids\" ]]; then kill -TERM \$pids 2>/dev/null || true; for i in {1..25}; do pgrep -f 'java.*server\\.jar' >/dev/null || break; sleep 1; done; pkill -9 -f 'java.*server\\.jar' 2>/dev/null || true; fi"
   fi
 
   instrument INFO "systemd.restart" run_remote_cmd \
