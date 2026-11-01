@@ -16,35 +16,10 @@ detect_paper_version() {
     return 0
   fi
 
-  # Try reading the current Minecraft version from version_history.json on the server
-  local vh_file="${DEPLOY_SERVER_ROOT}/version_history.json"
-  if [[ -f "${vh_file}" ]]; then
-    local parsed
-    parsed="$(python3 - "${vh_file}" <<'PYEOF'
-import json, re, sys
-try:
-    with open(sys.argv[1], "r", encoding="utf-8") as f:
-        data = json.load(f)
-    curr = data.get("currentVersion", "")
-    m = re.search(r"\(MC:\s*([0-9.]+)\)", curr)
-    if m:
-        print(m.group(1))
-    else:
-        m2 = re.search(r"paper-([0-9.]+?)-", curr)
-        if m2:
-            print(m2.group(1))
-except Exception:
-    pass
-PYEOF
-)"
-    if [[ -n "${parsed}" ]]; then
-      echo "${parsed}"
-      return 0
-    fi
-  fi
-
-  # Fallback: query latest version from PaperMC Fill v2 API
-  curl -fsSL "https://api.papermc.io/v2/projects/paper" | jq -r '.versions[-1]'
+  # Query latest stable release version from PaperMC Fill v3 API
+  local ua="ShyCubes-Updater/1.0 (https://github.com/DSMRick/ShyCubes)"
+  curl -fsSL -H "User-Agent: ${ua}" "https://fill.papermc.io/v3/projects/paper" \
+    | jq -r '[.versions[][] | select(test("^[0-9.]+$"))][0]'
 }
 
 update_paper_jar() {
@@ -53,19 +28,20 @@ update_paper_jar() {
   local target_jar="${DEPLOY_SERVER_ROOT}/$(jq -r '.paper.target_jar // "server.jar"' "${MANIFEST_FILE}")"
   local mc_version
   mc_version="$(detect_paper_version)"
+  local ua="ShyCubes-Updater/1.0 (https://github.com/DSMRick/ShyCubes)"
 
-  local builds_json
-  if ! builds_json="$(curl -fsSL "https://api.papermc.io/v2/projects/${project}/versions/${mc_version}/builds" 2>/dev/null)"; then
+  local build_json
+  if ! build_json="$(curl -fsSL -H "User-Agent: ${ua}" "https://fill.papermc.io/v3/projects/${project}/versions/${mc_version}/builds/latest" 2>/dev/null)"; then
     emit_event WARN "update.paper.skipped" version="${mc_version}" reason="version_lookup_failed"
     return 0
   fi
 
-  local latest_build download_name remote_sha256
-  latest_build="$(printf '%s' "${builds_json}" | jq -r '.builds[-1].build // empty')"
-  download_name="$(printf '%s' "${builds_json}" | jq -r '.builds[-1].downloads.application.name // empty')"
-  remote_sha256="$(printf '%s' "${builds_json}" | jq -r '.builds[-1].downloads.application.sha256 // empty')"
+  local latest_build download_url remote_sha256
+  latest_build="$(printf '%s' "${build_json}" | jq -r '.id // empty')"
+  download_url="$(printf '%s' "${build_json}" | jq -r '.downloads["server:default"].url // empty')"
+  remote_sha256="$(printf '%s' "${build_json}" | jq -r '.downloads["server:default"].checksums.sha256 // empty')"
 
-  if [[ -z "${latest_build}" || -z "${download_name}" ]]; then
+  if [[ -z "${latest_build}" || -z "${download_url}" ]]; then
     emit_event WARN "update.paper.skipped" version="${mc_version}" reason="no_build_found"
     return 0
   fi
@@ -80,10 +56,9 @@ update_paper_jar() {
     return 0
   fi
 
-  local download_url="https://api.papermc.io/v2/projects/${project}/versions/${mc_version}/builds/${latest_build}/downloads/${download_name}"
   local tmp_jar="${target_jar}.tmp"
 
-  instrument INFO "http.get.papermc" curl -fsSL -o "${tmp_jar}" "${download_url}"
+  instrument INFO "http.get.papermc" curl -fsSL -H "User-Agent: ${ua}" -o "${tmp_jar}" "${download_url}"
 
   if [[ -n "${remote_sha256}" ]]; then
     local downloaded_sha256
