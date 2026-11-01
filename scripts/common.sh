@@ -257,6 +257,7 @@ fi
 
 DEPLOY_SERVER_ROOT="${DEPLOY_SERVER_ROOT:-/home/opc/mc}"
 DEPLOY_REMOTE_DIR="${DEPLOY_REMOTE_DIR:-${DEPLOY_SERVER_ROOT}/plugins}"
+PLUGIN_JAR_NAME="${PLUGIN_JAR_NAME:-shycubes.jar}"
 BACKUP_ROOT="${REPO_ROOT}/${LOCAL_BACKUP_DIR:-server_data}"
 if [[ -d "${REPO_ROOT}/server_configs" ]]; then
   CONFIGS_ROOT="${CONFIGS_ROOT:-${REPO_ROOT}/server_configs}"

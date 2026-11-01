@@ -77,8 +77,14 @@ deploy_steps() {
     return 0
   fi
 
-  local dest_name="${PLUGIN_JAR_NAME:-$(basename "${SOURCE_FILE}")}"
+  local dest_name="${PLUGIN_JAR_NAME:-shycubes.jar}"
   local remote_target="${REMOTE_DIR_TARGET}/${dest_name}"
+
+  if [[ "${DEPLOY_LOCAL}" == "true" ]]; then
+    rm -f "${DEPLOY_REMOTE_DIR}"/shycubes-*.jar
+  else
+    run_remote_cmd rm -f "${DEPLOY_REMOTE_DIR}"/shycubes-*.jar || true
+  fi
 
   instrument INFO "deploy.rsync_jar" run_rsync -az "${SOURCE_FILE}" "${remote_target}"
 }

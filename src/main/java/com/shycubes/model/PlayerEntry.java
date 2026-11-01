@@ -18,3 +18,4 @@ public record PlayerEntry(
         attributes = attributes != null ? Map.copyOf(attributes) : Collections.emptyMap();
     }
 }
+

@@ -65,3 +65,4 @@ rm -f "${LIBS_OUT}/${ARTIFACT_NAME}"
 jar --create --file "${LIBS_OUT}/${ARTIFACT_NAME}" -C "${CLASSES_DIR}" .
 
 echo "BUILD SUCCESSFUL: ${LIBS_OUT}/${ARTIFACT_NAME}"
+

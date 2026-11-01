@@ -21,3 +21,4 @@ permissions:
   shycubes.leaderboard.admin:
     description: Allows moving or removing the in-world leaderboard hologram
     default: op
+

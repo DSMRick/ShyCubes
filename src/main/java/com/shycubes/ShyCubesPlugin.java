@@ -95,3 +95,4 @@ public class ShyCubesPlugin extends JavaPlugin {
         return hologramManager;
     }
 }
+
