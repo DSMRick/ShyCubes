@@ -10,8 +10,17 @@
 - **Cross-Play Integration**:
   - **Geyser-Spigot**: Bridges Bedrock Edition clients to Java Edition servers.
   - **Floodgate**: Allows Bedrock Edition players to join without a Java Edition account (`FloodgateApi` for Bedrock player detection, XUIDs, forms/Cumulus UI, etc.).
-- **Build System**: Gradle (Kotlin or Groovy DSL) or Maven *(to be configured)*
-- **Language**: Java
+- **Build System**: Gradle (`build.gradle` + lightweight `./gradlew` wrapper producing `build/libs/shycubes-1.0.0.jar`)
+- **Language**: Java 21+ (running on OpenJDK 25 on server)
+- **Database**: SQLite (`plugins/ShyCubes/players.db` via [`PlayerDatabase`](file:///Users/rmanion/personal/mc1/src/main/java/com/shycubes/db/PlayerDatabase.java))
+
+## Plugin Architecture (`src/main/java/com/shycubes/`)
+- **[`ShyCubesPlugin`](file:///Users/rmanion/personal/mc1/src/main/java/com/shycubes/ShyCubesPlugin.java)**: Main Paper plugin entrypoint; initializes SQLite database, registers event listeners and `/leaderboard` (`/lb`, `/topblocks`) command, and runs periodic async DB flushes + main-thread hologram updates.
+- **[`PlayerDatabase`](file:///Users/rmanion/personal/mc1/src/main/java/com/shycubes/db/PlayerDatabase.java)**: SQLite player database (`players` table + extensible `player_attributes` key-value table) with lock-free in-memory write-back caching (`ConcurrentHashMap` + `AtomicLong`) and volatile Top 10 snapshots so block-break tracking and leaderboard reads never block the main server tick thread.
+- **[`LeaderboardHologramManager`](file:///Users/rmanion/personal/mc1/src/main/java/com/shycubes/leaderboard/LeaderboardHologramManager.java)**: Manages the in-world 3D floating text hologram for the **Top 10 Block Breakers** using `PersistentDataContainer`-tagged invisible marker `ArmorStand` lines updated in-place for flicker-free rendering across both Java Edition and Geyser/Bedrock Edition.
+- **[`PlayerActivityListener`](file:///Users/rmanion/personal/mc1/src/main/java/com/shycubes/listener/PlayerActivityListener.java)**: Tracks player joins, quits, `BlockBreakEvent` increments, chunk loads for the hologram chunk, and protects hologram entities from interaction/damage.
+- **[`LeaderboardCommand`](file:///Users/rmanion/personal/mc1/src/main/java/com/shycubes/command/LeaderboardCommand.java)**: Implements `/leaderboard` (`/lb`, `/topblocks`) to view Top 10 stats in chat, move the floating hologram (`/lb here`), force refresh (`/lb refresh`), remove (`/lb remove`), or inspect a player's database record (`/lb stats [player]`).
+- **[`BedrockUtil`](file:///Users/rmanion/personal/mc1/src/main/java/com/shycubes/util/BedrockUtil.java)**: Detects Bedrock Edition players and XUIDs via Floodgate API or Floodgate version-0 UUIDs.
 
 ## Key Considerations for Paper + Geyser/Floodgate
 - **Player Detection**: Use `FloodgateApi.getInstance().isFloodgatePlayer(uuid)` to check if a player is on Bedrock Edition.
