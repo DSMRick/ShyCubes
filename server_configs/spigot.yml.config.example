@@ -158,6 +158,8 @@ world-settings:
     view-distance: default
     simulation-distance: default
     verbose: false
+  worldeditregentempworld:
+    verbose: false
 advancements:
   disable-saving: false
   disabled:
