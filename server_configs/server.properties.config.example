@@ -1,5 +1,5 @@
 #Minecraft server properties
-#Fri Nov 06 18:14:05 GMT 2026
+#Fri Nov 06 18:52:00 GMT 2026
 accepts-transfers=false
 allow-flight=false
 broadcast-console-to-ops=true
@@ -55,10 +55,10 @@ rcon.password=
 rcon.port=25575
 region-file-compression=deflate
 require-resource-pack=false
-resource-pack=https\://raw.githubusercontent.com/DSMRick/ShyCubes/main/resourcepacks/dist/shycubes-java.zip?v=35421eece47c
+resource-pack=https\://raw.githubusercontent.com/DSMRick/ShyCubes/main/resourcepacks/dist/shycubes-java.zip?v=f83e2e6e5659
 resource-pack-id=a8c9d4e2-71b3-4f5a-9c21-6e3f8b4d2101
 resource-pack-prompt=
-resource-pack-sha1=35421eece47ce08a46066c1d78c30f0894a92bea
+resource-pack-sha1=f83e2e6e565949d27c33183b39671e24da916c3f
 server-ip=
 server-port=25565
 simulation-distance=10
