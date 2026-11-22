@@ -55,10 +55,10 @@ rcon.password=
 rcon.port=25575
 region-file-compression=deflate
 require-resource-pack=false
-resource-pack=https\://raw.githubusercontent.com/DSMRick/ShyCubes/main/resourcepacks/dist/shycubes-java.zip?v=1055a25fca7a
+resource-pack=https\://raw.githubusercontent.com/DSMRick/ShyCubes/main/resourcepacks/dist/shycubes-java.zip?v=9ae5661bcac4
 resource-pack-id=a8c9d4e2-71b3-4f5a-9c21-6e3f8b4d2101
 resource-pack-prompt=
-resource-pack-sha1=1055a25fca7a98e22ebe31fa38f80e5a3c0024f8
+resource-pack-sha1=9ae5661bcac462c6ed4d211ae9515232e54432c4
 server-ip=
 server-port=25565
 simulation-distance=10
