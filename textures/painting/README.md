@@ -1,1 +1,0 @@
-# Painting Textures
