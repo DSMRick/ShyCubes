@@ -82,7 +82,26 @@ icon_path = os.path.join(textures_root, "pack.png")
 if not os.path.isfile(icon_path):
     make_default_icon(icon_path)
 
-for subdir in ("items", "blocks", "entity", "gui"):
+for subdir in (
+    "block",
+    "blocks",
+    "colormap",
+    "effect",
+    "entity",
+    "environment",
+    "font",
+    "gui",
+    "item",
+    "items",
+    "map",
+    "misc",
+    "mob_effect",
+    "models",
+    "models/armor",
+    "painting",
+    "particle",
+    "trims",
+):
     os.makedirs(os.path.join(textures_root, subdir), exist_ok=True)
     gitkeep = os.path.join(textures_root, subdir, ".gitkeep")
     if not os.listdir(os.path.join(textures_root, subdir)):
@@ -175,17 +194,58 @@ with tempfile.TemporaryDirectory() as tmpdir:
     item_texture_data = {}
     terrain_texture_data = {}
 
-    # 3. Convert textures: Java vs Bedrock layout
+    # 3. Convert textures: Java vs Bedrock layout across all mc-assets categories
+    # Tuple format: (src_sub, java_sub, bedrock_sub, atlas_dict)
     category_map = [
+        ("item", "assets/minecraft/textures/item", "textures/items", item_texture_data),
         ("items", "assets/minecraft/textures/item", "textures/items", item_texture_data),
+        ("block", "assets/minecraft/textures/block", "textures/blocks", terrain_texture_data),
         ("blocks", "assets/minecraft/textures/block", "textures/blocks", terrain_texture_data),
+        ("colormap", "assets/minecraft/textures/colormap", "textures/colormap", None),
+        ("effect", "assets/minecraft/textures/effect", "textures/effect", None),
         ("entity", "assets/minecraft/textures/entity", "textures/entity", None),
+        ("environment", "assets/minecraft/textures/environment", "textures/environment", None),
+        ("font", "assets/minecraft/textures/font", "font", None),
         ("gui", "assets/minecraft/textures/gui", "textures/ui", None),
+        ("map", "assets/minecraft/textures/map", "textures/map", None),
+        ("misc", "assets/minecraft/textures/misc", "textures/misc", None),
+        ("mob_effect", "assets/minecraft/textures/mob_effect", "textures/ui", None),
+        ("models", "assets/minecraft/textures/models", "textures/models", None),
+        ("painting", "assets/minecraft/textures/painting", "textures/painting", None),
+        ("particle", "assets/minecraft/textures/particle", "textures/particle", None),
+        ("trims", "assets/minecraft/textures/trims", "textures/trims", None),
     ]
 
-    # Java -> Bedrock filename aliases for vanilla entity/block textures that differ between editions
-    bedrock_entity_aliases = {
-        "chest/normal_left.png": ["chest/double_normal.png"],
+    known_top_dirs = {c[0] for c in category_map}
+    # Also auto-discover any future custom top-level folder under textures/
+    for entry in sorted(os.listdir(textures_root)):
+        full_entry = os.path.join(textures_root, entry)
+        if os.path.isdir(full_entry) and not entry.startswith(".") and entry not in known_top_dirs:
+            category_map.append((
+                entry,
+                f"assets/minecraft/textures/{entry}",
+                f"textures/{entry}",
+                None,
+            ))
+
+    # Java -> Bedrock filename aliases for vanilla textures that differ between editions
+    bedrock_category_aliases = {
+        "entity": {
+            "chest/normal_left.png": ["textures/entity/chest/double_normal.png"],
+            "chest/trapped.png": ["textures/entity/chest/trap.png"],
+            "chest/trapped_left.png": ["textures/entity/chest/trap_double.png"],
+            "iron_golem/iron_golem.png": ["textures/entity/iron_golem.png"],
+            "enderdragon/dragon.png": ["textures/entity/dragon/dragon.png"],
+        },
+        "font": {
+            "ascii.png": ["font/default8.png"],
+            "ascii_sga.png": ["font/enchanting_table.png"],
+        },
+        "misc": {
+            "pumpkinblur.png": ["textures/ui/pumpkinblur.png"],
+            "spyglass_scope.png": ["textures/ui/spyglass_flat.png"],
+            "enchanted_glint_item.png": ["textures/misc/enchanted_item_glint.png"],
+        },
     }
 
     texture_count = 0
@@ -197,7 +257,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
             dirs.sort()
             files.sort()
             for fname in files:
-                if not fname.lower().endswith(".png"):
+                if not (fname.lower().endswith(".png") or fname.lower().endswith(".tga")):
                     continue
                 texture_count += 1
                 full_src = os.path.join(root, fname)
@@ -209,17 +269,48 @@ with tempfile.TemporaryDirectory() as tmpdir:
                 os.makedirs(os.path.dirname(java_dest), exist_ok=True)
                 shutil.copyfile(full_src, java_dest)
 
-                # Optional .mcmeta animation file for Java
+                # Optional .mcmeta animation/gui-scaling file for Java
                 if os.path.isfile(full_src + ".mcmeta"):
                     shutil.copyfile(full_src + ".mcmeta", java_dest + ".mcmeta")
 
-                bedrock_dest = os.path.join(bedrock_dir, bedrock_sub, rel_from_cat)
-                os.makedirs(os.path.dirname(bedrock_dest), exist_ok=True)
-                shutil.copyfile(full_src, bedrock_dest)
+                # Special cross-version Java 1.21.2+ & Bedrock handling for worn armor models
+                if src_sub == "models" and rel_from_cat.startswith("armor/"):
+                    armor_fname = os.path.basename(rel_from_cat)
+                    # Bedrock uses <material>_1.png / <material>_2.png instead of <material>_layer_1.png
+                    bedrock_armor_rel = rel_from_cat.replace("_layer_1.", "_1.").replace("_layer_2.", "_2.")
+                    bedrock_dest = os.path.join(bedrock_dir, bedrock_sub, bedrock_armor_rel)
+                    os.makedirs(os.path.dirname(bedrock_dest), exist_ok=True)
+                    shutil.copyfile(full_src, bedrock_dest)
 
-                if src_sub == "entity" and rel_from_cat in bedrock_entity_aliases:
-                    for alias_rel in bedrock_entity_aliases[rel_from_cat]:
-                        alias_dest = os.path.join(bedrock_dir, bedrock_sub, alias_rel)
+                    # Java 1.21.2+ also reads worn armor from entity/equipment/humanoid[_leggings]/<material>.png
+                    if "_layer_1." in armor_fname:
+                        mat_file = armor_fname.replace("_layer_1.", ".")
+                        eq_dest = os.path.join(java_dir, "assets/minecraft/textures/entity/equipment/humanoid", mat_file)
+                        os.makedirs(os.path.dirname(eq_dest), exist_ok=True)
+                        shutil.copyfile(full_src, eq_dest)
+                    elif "_layer_2." in armor_fname:
+                        mat_file = armor_fname.replace("_layer_2.", ".")
+                        eq_dest = os.path.join(java_dir, "assets/minecraft/textures/entity/equipment/humanoid_leggings", mat_file)
+                        os.makedirs(os.path.dirname(eq_dest), exist_ok=True)
+                        shutil.copyfile(full_src, eq_dest)
+                elif src_sub == "mob_effect":
+                    # Bedrock status effect icons live at textures/ui/<effect>_effect.png
+                    base_no_ext, ext = os.path.splitext(rel_from_cat)
+                    if not base_no_ext.endswith("_effect"):
+                        bedrock_rel = f"{base_no_ext}_effect{ext}"
+                    else:
+                        bedrock_rel = rel_from_cat
+                    bedrock_dest = os.path.join(bedrock_dir, bedrock_sub, bedrock_rel)
+                    os.makedirs(os.path.dirname(bedrock_dest), exist_ok=True)
+                    shutil.copyfile(full_src, bedrock_dest)
+                else:
+                    bedrock_dest = os.path.join(bedrock_dir, bedrock_sub, rel_from_cat)
+                    os.makedirs(os.path.dirname(bedrock_dest), exist_ok=True)
+                    shutil.copyfile(full_src, bedrock_dest)
+
+                if src_sub in bedrock_category_aliases and rel_from_cat in bedrock_category_aliases[src_sub]:
+                    for alias_path in bedrock_category_aliases[src_sub][rel_from_cat]:
+                        alias_dest = os.path.join(bedrock_dir, alias_path)
                         os.makedirs(os.path.dirname(alias_dest), exist_ok=True)
                         if not os.path.exists(alias_dest):
                             shutil.copyfile(full_src, alias_dest)

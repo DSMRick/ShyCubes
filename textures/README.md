@@ -1,55 +1,38 @@
 # ShyCubes Resource Pack & Textures (`textures/`)
 
-This directory holds the single-source-of-truth textures and metadata for **ShyCubes**.
+This directory holds the single-source-of-truth textures and metadata for **ShyCubes**, mirroring the full category hierarchy from `assets/minecraft/textures/`.
+
 During deployment (`./deploy.sh` or `./scripts/build_resource_pack.sh`), this folder is compiled into:
 
 1. **Java Edition Resource Pack**: `resourcepacks/dist/shycubes-java.zip` (+ `.sha1`)
-   - Automatically updates `resource-pack`, `resource-pack-id`, and `resource-pack-sha1` in `server_configs/server.properties`.
-   - Synced to `/home/opc/mc/resourcepacks/shycubes-java.zip` on the server and tracked in `resourcepacks/dist/` so GitHub Raw (`https://raw.githubusercontent.com/DSMRick/ShyCubes/main/resourcepacks/dist/shycubes-java.zip`) can serve it directly to Java clients.
+   - Automatically updates `resource-pack` (with `?v=<sha1_prefix>` cache-busting), `resource-pack-id`, and `resource-pack-sha1` in `server_configs/server.properties`.
+   - Synced to `/home/opc/mc/resourcepacks/shycubes-java.zip` on the server and tracked in `resourcepacks/dist/` so GitHub Raw (`https://raw.githubusercontent.com/DSMRick/ShyCubes/main/resourcepacks/dist/shycubes-java.zip`) serves it directly to Java clients.
 2. **Bedrock Edition Resource Pack (`.mcpack`)**: `resourcepacks/dist/shycubes-bedrock.mcpack` (+ `.sha256`)
-   - Converts Java texture paths into Bedrock paths (`textures/items/...` and `textures/blocks/...`).
-   - Generates Bedrock's `manifest.json`, `textures/item_texture.json`, and `textures/terrain_texture.json`.
-   - Deployed via `rsync` to `/home/opc/mc/plugins/Geyser-Spigot/packs/shycubes-bedrock.mcpack` so Geyser automatically pushes it to connecting Bedrock players.
+   - Translates Java texture paths and filenames into Bedrock paths and generates `manifest.json` (with auto-incremented content hash version), `textures/item_texture.json`, and `textures/terrain_texture.json`.
+   - Deployed via `rsync` to `/home/opc/mc/plugins/Geyser-Spigot/packs/shycubes-bedrock.mcpack` so Geyser pushes it to connecting Bedrock players.
 3. **Geyser Custom Mappings**: `resourcepacks/dist/custom_mappings/shycubes_mappings.json`
    - Generates Geyser v2 custom item/block mappings from `textures/mappings.json` and syncs them to `/home/opc/mc/plugins/Geyser-Spigot/custom_mappings/`.
 
-## Folder Structure
+---
 
-```text
-textures/
-├── pack.json          # Pack metadata (name, description, pack_format, deterministic UUIDs)
-├── pack.png           # Pack icon (used for Java pack.png and Bedrock pack_icon.png)
-├── mappings.json      # Optional custom item/block definitions (CustomModelData + Geyser mappings)
-├── items/             # Put item PNGs here -> Java assets/minecraft/textures/item/ & Bedrock textures/items/
-├── blocks/            # Put block PNGs here -> Java assets/minecraft/textures/block/ & Bedrock textures/blocks/
-├── entity/            # Optional entity textures -> Java assets/minecraft/textures/entity/ & Bedrock textures/entity/
-└── gui/               # Optional GUI textures -> Java assets/minecraft/textures/gui/ & Bedrock textures/ui/
-```
+## Folder Reference & Java vs. Bedrock Considerations
 
-## Adding a Texture
+All 15 vanilla Minecraft texture categories (plus their subdirectories) are pre-created in `textures/` and wired into `scripts/build_resource_pack.sh`:
 
-### 1. Vanilla Texture Overrides
-Drop any `.png` file into `textures/items/<name>.png` or `textures/blocks/<name>.png`.
-- It will automatically be placed in `assets/minecraft/textures/item/<name>.png` (or `block/`) in the Java `.zip`.
-- It will automatically be placed in `textures/items/<name>.png` (or `textures/blocks/<name>.png`) and registered in `textures/item_texture.json` / `textures/terrain_texture.json` in the Bedrock `.mcpack`.
-
-### 2. Custom Items (CustomModelData + Geyser Mapping)
-1. Place your PNG in `textures/items/<custom_name>.png`.
-2. Add an entry to `textures/mappings.json` under `"items"`:
-   ```json
-   {
-     "items": [
-       {
-         "name": "ruby_sword",
-         "base_item": "minecraft:diamond_sword",
-         "custom_model_data": 1001,
-         "display_name": "Ruby Sword"
-       }
-     ]
-   }
-   ```
-3. Next time `./deploy.sh` (or `./scripts/build_resource_pack.sh`) runs, it will automatically:
-   - Generate the Java item model (`assets/minecraft/models/item/ruby_sword.json`), base item override (`assets/minecraft/models/item/diamond_sword.json`), and 1.21.4+ item definition (`assets/minecraft/items/diamond_sword.json`).
-   - Register `ruby_sword` in Bedrock's `textures/item_texture.json`.
-   - Generate `plugins/Geyser-Spigot/custom_mappings/shycubes_mappings.json` so Bedrock players see the custom item natively.
-
+| Source Folder in `textures/` | Java Output Path (`shycubes-java.zip`) | Bedrock Output Path (`shycubes-bedrock.mcpack`) | Java vs. Bedrock Special Care & Auto-Conversions |
+| :--- | :--- | :--- | :--- |
+| **`block/`** *(or `blocks/`)* | `assets/minecraft/textures/block/` | `textures/blocks/` + `terrain_texture.json` | **Pluralization & Atlas**: Handled automatically. **Animations**: Java uses a vertical strip `.png` + `<name>.png.mcmeta` (copied automatically); Bedrock uses `textures/flipbook_textures.json`. **Naming**: Most block names match (`stone.png`, `dirt.png`), but some legacy Bedrock block filenames differ (e.g., Java `oak_planks.png` vs. Bedrock `planks_oak.png`). |
+| **`item/`** *(or `items/`)* | `assets/minecraft/textures/item/` | `textures/items/` + `item_texture.json` | **Pluralization & Atlas**: Handled automatically. **Custom Items**: Add `CustomModelData` entries in `textures/mappings.json` to auto-generate Java models (`models/item/` + 1.21.4+ `items/`) and Geyser `custom_mappings`. |
+| **`entity/`** *(+ 58 mob/block-entity subfolders)* | `assets/minecraft/textures/entity/<subpath>` | `textures/entity/<subpath>` | **Chests (`entity/chest/`)**: Single chest `normal.png` and `ender.png` match in both. Java splits double chests into `normal_left.png` + `normal_right.png`, while Bedrock uses a combined `double_normal.png`. `build_resource_pack.sh` auto-aliases `chest/normal_left.png` → `chest/double_normal.png`, `chest/trapped.png` → `chest/trap.png`, `iron_golem/iron_golem.png` → `iron_golem.png`, and `enderdragon/dragon.png` → `dragon/dragon.png`. **Mobs with alpha/tint masks**: Some Bedrock mobs use `.tga` alpha channels for dye/marking masks (both `.png` and `.tga` are supported by the build script). |
+| **`painting/`** | `assets/minecraft/textures/painting/<name>.png` | `textures/painting/<name>.png` & `textures/painting/kz.png` | **Individual Files vs. Atlas (`kz.png`)**: Java (1.14+) uses separate files per painting (`kebab.png`, `wanderer.png`, `skeleton.png`, `back.png`). Bedrock still reads classic paintings from the combined 256×256 `textures/painting/kz.png` sprite sheet (while newer 1.21+ paintings are individual files). To replace classic paintings on Bedrock, also include/update `textures/painting/kz.png`. |
+| **`models/`** (`models/armor/`) | `assets/minecraft/textures/models/armor/` & `entity/equipment/humanoid[_leggings]/` | `textures/models/armor/` | **Armor Layer Naming**: Java names worn armor `<material>_layer_1.png` (helmet/chest/boots) and `<material>_layer_2.png` (leggings), and in 1.21.2+ moved them to `entity/equipment/humanoid/<material>.png` and `humanoid_leggings/<material>.png`. Bedrock names them `<material>_1.png` and `<material>_2.png`. **Handled automatically**: Drop `<material>_layer_1.png` / `<material>_layer_2.png` into `textures/models/armor/` and `build_resource_pack.sh` outputs all three formats automatically! |
+| **`trims/`** (`color_palettes/`, `items/`, `models/armor/`) | `assets/minecraft/textures/trims/<subpath>` | `textures/trims/<subpath>` | **1:1 Compatible**: Armor trim palettes and overlays share the same folder hierarchy and filenames across Java and Bedrock. |
+| **`gui/`** (`advancements/`, `container/`, `hanging_signs/`, `presets/`, `title/`) | `assets/minecraft/textures/gui/<subpath>` | `textures/ui/<subpath>` | **Different UI Engines**: Java uses 256×256 container sheets (`gui/container/inventory.png`, `shulker_box.png`) and split HUD sprites, whereas Bedrock uses JSON UI (`textures/ui/`) with 9-slice individual widgets. Files in `textures/gui/` apply to Java (`assets/minecraft/textures/gui/`) and are copied to `textures/ui/` for Bedrock. |
+| **`mob_effect/`** | `assets/minecraft/textures/mob_effect/<effect>.png` | `textures/ui/<effect>_effect.png` | **Suffix & Folder Translation**: Java stores 18×18 potion/status icons in `mob_effect/<effect>.png` (`speed.png`, `strength.png`), whereas Bedrock stores them in `textures/ui/<effect>_effect.png`. **Handled automatically** by `build_resource_pack.sh`! |
+| **`environment/`** | `assets/minecraft/textures/environment/<name>.png` | `textures/environment/<name>.png` | **Mostly 1:1**: `sun.png`, `moon_phases.png`, `clouds.png`, and `end_sky.png` work identically in both Java and Bedrock. (Java uses separate `rain.png` and `snow.png`, while Bedrock combines precipitation into `weather.png`). |
+| **`colormap/`** | `assets/minecraft/textures/colormap/<name>.png` | `textures/colormap/<name>.png` | **1:1 Compatible**: 256×256 biome tint triangles `grass.png` and `foliage.png` work identically in both Java and Bedrock. |
+| **`particle/`** | `assets/minecraft/textures/particle/<name>.png` | `textures/particle/<name>.png` | **Split Files vs. `particles.png` Sheet**: Java 1.14+ uses individual particle PNGs (`flame.png`, `heart.png`, `note.png`). Bedrock reads newer particles from individual sheets (`campfire_smoke.png`, `cherry.png`, `sculk_charge.png`) and classic particles from the combined `textures/particle/particles.png` atlas. |
+| **`map/`** | `assets/minecraft/textures/map/<name>.png` | `textures/map/<name>.png` | **`map_background.png`**: Works identically in both Java and Bedrock. Map icons are split in Java 1.20.5+, while Bedrock uses `textures/map/map_icons.png`. |
+| **`misc/`** | `assets/minecraft/textures/misc/<name>.png` | `textures/misc/<name>.png` (+ `textures/ui/` aliases) | **Screen Overlays & Glints**: `build_resource_pack.sh` automatically aliases `pumpkinblur.png` → Bedrock `textures/ui/pumpkinblur.png`, `spyglass_scope.png` → Bedrock `textures/ui/spyglass_flat.png`, and `enchanted_glint_item.png` → Bedrock `textures/misc/enchanted_item_glint.png`. |
+| **`font/`** | `assets/minecraft/textures/font/<name>.png` | `font/<name>.png` (at `.mcpack` root) | **Root `font/` & Filename Alias**: In Bedrock, fonts live at the root `font/` directory (not `textures/font/`), and `ascii.png` is named `default8.png`. **Handled automatically**: `build_resource_pack.sh` outputs `textures/font/ascii.png` to Java `assets/minecraft/textures/font/ascii.png` and Bedrock `font/default8.png` (and `ascii_sga.png` → `font/enchanting_table.png`). |
+| **`effect/`** | `assets/minecraft/textures/effect/<name>.png` | `textures/effect/<name>.png` | **Java Post-Processing Shader Helper**: Contains `dither.png` used by Java Edition's internal post-processing shaders; ignored by Bedrock. |
