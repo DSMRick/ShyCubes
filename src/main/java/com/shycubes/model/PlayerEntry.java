@@ -9,13 +9,17 @@ public record PlayerEntry(
         String username,
         boolean bedrock,
         String xuid,
-        long blocksBroken,
         long firstJoin,
         long lastSeen,
+        Map<String, Long> stats,
         Map<String, String> attributes
 ) {
     public PlayerEntry {
+        stats = stats != null ? Map.copyOf(stats) : Collections.emptyMap();
         attributes = attributes != null ? Map.copyOf(attributes) : Collections.emptyMap();
     }
-}
 
+    public long getStat(String statKey) {
+        return stats.getOrDefault(statKey, 0L);
+    }
+}

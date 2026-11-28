@@ -2,7 +2,7 @@ name: ShyCubes
 version: '${version}'
 main: com.shycubes.ShyCubesPlugin
 api-version: '1.21'
-description: ShyCubes core plugin with SQLite player database and floating hologram leaderboards
+description: ShyCubes core plugin with SQLite player stats and extensible floating billboards
 authors:
   - DSMRick
 softdepend:
@@ -11,14 +11,13 @@ softdepend:
 
 commands:
   leaderboard:
-    description: View or manage the Top 10 Blocks Broken floating leaderboard
-    usage: /leaderboard [here|refresh|remove]
+    description: View or manage in-world ShyCubes leaderboard billboards
+    usage: /leaderboard [id|list|stats|here|create|remove|delete|refresh|reload|tp]
     aliases:
       - lb
       - topblocks
 
 permissions:
   shycubes.leaderboard.admin:
-    description: Allows moving or removing the in-world leaderboard hologram
+    description: Allows creating, moving, removing, reloading, and teleporting to leaderboard billboards
     default: op
-
