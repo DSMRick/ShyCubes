@@ -18,23 +18,4 @@ leaderboard:
     x: 0.5
     y: 66.8
     z: 51.5
-billboards:
-  topblocks:
-    enabled: true
-    stat: top_blocks
-    order: DESC
-    entries: 10
-    unit: ''
-    header:
-    - §6§l✦ §e§lTOP 10 TOP BLOCKS §6§l✦
-    - §7ShyCubes Leaderboard
-    auto-place-at-spawn: false
-    spawn-offset:
-      x: 0.5
-      y: 2.8
-      z: 3.5
-    location:
-      world: world
-      x: -184.5
-      y: 82.8
-      z: 507.5
+billboards: {}
